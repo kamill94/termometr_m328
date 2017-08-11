@@ -48,7 +48,6 @@ uint8_t f_disconnect = 0;
 uint8_t f_delay = 0;
 uint8_t f_lcdon = 0;
 uint8_t f_send_web = 0;
-//uint8_t f_mcperr = 0;
 
 uint8_t call_time = CALL_TIME;
 uint8_t delay_time = DELAY_TIME;
