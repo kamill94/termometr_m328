@@ -275,12 +275,6 @@ void lcd_refresh (void)
 
 	}
 
-
-
-
-//	lcd_gotoxy(0,1);
-//	lcd_puts(uart_parsed_string);
-//	lcd_puts("   ");
 }
 
 void sim800_init(void)
