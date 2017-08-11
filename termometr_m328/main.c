@@ -5,7 +5,7 @@
  *      Author: Kamil Blasiak
  */
 
-#define MCP9808_ADDRESS 0x18 //Adres czujnika temperatury
+#define MCP9808_ADDRESS 0x18 //Adres czujnika temperatury.
 #define CALL_TIME 20
 #define DELAY_TIME 60
 #define DEFAULT_TEMP_ALARM 20
