@@ -482,7 +482,7 @@ void sim800_send_data_to_web (void)
 	_delay_ms(1000);
 	uart_puts_p(PSTR("AT+HTTPTERM\r\n"));
 	_delay_ms(100);
-	//uart_puts_p(PSTR("AT+SAPBR=0,1\r\n"));
+	//uart_puts_p(PSTR("AT+SAPBR=0,1\r\n"));  //Rozlaczenie GPRS
 	//_delay_ms(100);
 }
 
