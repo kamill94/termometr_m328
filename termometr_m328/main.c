@@ -364,6 +364,7 @@ void pin_check (void)
 		lcd_init(LCD_DISP_ON);
 		timer0_lcd = LCD_TIME;
 		lcd_led(0);
+		_delay_ms(500);
 		}
 }
 
@@ -442,9 +443,10 @@ void sim800_get_data (void)
 void sim800_send_sms (void)
 {
 	uart_putc(13);
+	_delay_ms(100);
 	uart_puts_p(PSTR("AT+CMGS=\"+48792682279\""));
 	uart_putc(0x0D);
-	_delay_ms(500);
+	_delay_ms(700);
 	dtostrf(temp,3,1,lcdbuffer);
 	uart_puts_p(PSTR("Temperatura: "));
 	uart_puts(lcdbuffer);
