@@ -95,6 +95,8 @@ volatile uint8_t timeout;
 #define I2C_WRITE   0
 
 
+void i2c_reset(void);
+
 /**
  @brief initialize the I2C master interace. Need to be called only once 
  @param  void

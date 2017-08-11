@@ -361,6 +361,7 @@ void pin_check (void)
 
 	if(!(PIND & (1<<PD2)))
 		{
+		lcd_init(LCD_DISP_ON);
 		timer0_lcd = LCD_TIME;
 		lcd_led(0);
 		}

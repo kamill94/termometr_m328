@@ -10,6 +10,7 @@
 #include <compat/twi.h>
 
 #include "i2cmaster.h"
+#include <util/delay.h>
 
 
 /* define CPU frequency in Mhz here if not defined in Makefile */
@@ -19,6 +20,22 @@
 
 /* I2C clock in Hz */
 #define SCL_CLOCK  100000L
+
+
+/*************************************************************************
+ Reset of I2C bus
+*************************************************************************/
+void i2c_reset(void)
+{
+
+	TWCR = 0;
+
+	for(uint8_t i = 9; i>0; i--)
+	{
+		PORTC ^= 1<<PC5;
+		_delay_ms(100);
+	}
+}
 
 
 /*************************************************************************
@@ -155,7 +172,7 @@ void i2c_stop(void)
 	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
 	
 	// wait until stop condition is executed and bus released
-	while(TWCR & (1<<TWSTO));
+	//while(TWCR & (1<<TWSTO));
 
 }/* i2c_stop */
 
