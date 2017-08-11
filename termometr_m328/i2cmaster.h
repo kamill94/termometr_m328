@@ -86,6 +86,7 @@
 #endif
 
 #include <avr/io.h>
+volatile uint8_t timeout;
 
 /** defines the data direction (reading from I2C device) in i2c_start(),i2c_rep_start() */
 #define I2C_READ    1

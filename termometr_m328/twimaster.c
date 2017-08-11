@@ -46,7 +46,16 @@ unsigned char i2c_start(unsigned char address)
 	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
 
 	// wait until transmission completed
-	while(!(TWCR & (1<<TWINT)));
+	timeout = 2;
+		while(!(TWCR & (1<<TWINT)))
+		{
+			//timeoutt--;
+			if(timeout==0)
+				{
+				i2c_reset();
+				break;
+				}
+		}
 
 	// check value of TWI Status Register. Mask prescaler bits.
 	twst = TW_STATUS & 0xF8;

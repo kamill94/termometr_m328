@@ -75,6 +75,7 @@ ISR (TIMER0_OVF_vect)
 		timer0_second++;
 		f_temp=1;
 		f_lcd_ref=1;
+		timeout--;
 
 		if(timer0_lcd>0) timer0_lcd--;
 		if(timer0_lcd == 0)
