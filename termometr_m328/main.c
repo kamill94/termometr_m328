@@ -39,7 +39,7 @@ uint8_t sim800_func_count = 0;
 int sim800_bat;
 uint8_t sim800_signal;
 
-uint8_t f_temp = 0;
+uint8_t f_temp = 0;  //flagi
 uint8_t f_lcd_ref = 0;
 uint8_t f_alarm = 0;
 uint8_t f_alarm_stop = 0;
