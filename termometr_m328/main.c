@@ -442,6 +442,8 @@ void sim800_get_data (void)
 
 void sim800_send_sms (void)
 {
+	_delay_ms(300);
+	uart_puts_p(PSTR("\r\n"));
 	uart_putc(13);
 	_delay_ms(100);
 	uart_puts_p(PSTR("AT+CMGS=\"+48792682279\""));
