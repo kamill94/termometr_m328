@@ -132,6 +132,7 @@ ISR (TIMER0_OVF_vect)
 			{
 				timer0_second=0;
 				timer0_minute++;
+				if(timer0_minute>239) timer0_minute = 0;
 
 				if(!(timer0_minute % 20)) f_send_web = 1;
 			}
