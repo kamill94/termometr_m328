@@ -28,6 +28,7 @@ uint8_t timer0_minute = 0;
 uint8_t timer0_lcd = LCD_TIME;
 
 float temp;
+float battery;
 
 char lcdbuffer [16];
 
@@ -36,8 +37,8 @@ char uart_parsed_string [33];
 uint8_t uart_datatype;
 
 uint8_t sim800_func_count = 0;
-int sim800_bat;
 uint8_t sim800_signal;
+
 
 uint8_t f_temp = 0;  //flagi
 uint8_t f_lcd_ref = 0;
@@ -65,6 +66,7 @@ void sim800_get_data (void);
 void sim800_disconnect (void);
 void sim800_send_sms (void);
 void sim800_send_data_to_web (void);
+void adc_init (void);
 
 ISR (TIMER0_OVF_vect)
 {
@@ -155,12 +157,12 @@ int main (void)
 	sim800_reset();
 	sim800_init();
 	timer0_init();
+	adc_init();
 
 	temp = MCP9808_GetTemp(MCP9808_ADDRESS);
 
 	while(1)
 	{
-
 		uart_get_str(uart_receive_buffer);
 		uart_datatype = parsedata(uart_receive_buffer, uart_parsed_string);
 
@@ -173,6 +175,9 @@ int main (void)
 
 		if(f_lcd_ref)
 			{
+			ADCSRA |= (1<<ADSC); // uruchomienie konwersji ADC
+			battery = (((ADC*1.1)/1024)*4.33333333);
+
 			lcd_refresh();
 			f_lcd_ref = 0;
 			}
@@ -253,10 +258,10 @@ void lcd_refresh (void)
 
 
 		lcd_gotoxy(0,1);       // Wyswietlanie stanu baterii i sygnalu sieci
-		itoa(sim800_bat, lcdbuffer, 10);
+		dtostrf(battery,3,2,lcdbuffer);
 		lcd_puts_p(PSTR("B:"));
 		lcd_puts(lcdbuffer);
-		lcd_puts_p(PSTR("mV"));
+		lcd_puts_p(PSTR("V"));
 
 		lcd_gotoxy(11,1);
 		itoa((sim800_signal*100/30), lcdbuffer, 10);
@@ -362,10 +367,9 @@ void pin_check (void)
 
 	if(!(PIND & (1<<PD2)))
 		{
-		lcd_init(LCD_DISP_ON);
 		timer0_lcd = LCD_TIME;
 		lcd_led(0);
-		_delay_ms(500);
+		//_delay_ms(500);
 		}
 }
 
@@ -400,13 +404,13 @@ uint8_t parsedata(char *data, char *out)
 	datatype = 5;
 	}
 
-    else if (strstr(data, "+CBC")) // Odczyt napiecia baterii
+   /* else if (strstr(data, "+CBC")) // Odczyt napiecia baterii
     	{
     	strcpy(out, data + 11);
     	out[4] = 0;
     	datatype = 6;
     	sim800_bat = atoi(out);
-    	}
+    	} */
 
     else if (strstr(data, "+CSQ")) // Odczyt sily sygnalu sieci GSM
        	{
@@ -484,6 +488,20 @@ void sim800_send_data_to_web (void)
 	_delay_ms(100);
 	//uart_puts_p(PSTR("AT+SAPBR=0,1\r\n"));  //Rozlaczenie GPRS
 	//_delay_ms(100);
+}
+
+void adc_init (void)
+{
+    ADCSRA = (1<<ADEN) //ADEN=1 w³¹czenie przetwornika ADC)
+             |(1<<ADPS0) // ustawienie preskalera na 128
+             |(1<<ADPS1)
+             |(1<<ADPS2)
+    		 |(1<<ADATE);
+
+    ADMUX  =    (1<<REFS1) | (1<<REFS0); // REFS1:0: wybór napiêcia odniesienia ADC
+                               //na wewnêtrzne Ÿród³o 1,1V
+                               //z zewnêtrznym kondensatorem na pinie AREF
+    ADCSRA |= (1<<ADSC);
 }
 
 
