@@ -14,6 +14,8 @@
 #define LCD_TIME 30
 
 #include <avr/io.h>
+#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdlib.h>
@@ -31,6 +33,8 @@ float temp;
 float battery;
 
 char lcdbuffer [16];
+
+uint8_t longpress = 0;
 
 char uart_receive_buffer [129];
 char uart_parsed_string [33];
@@ -54,6 +58,16 @@ uint8_t call_time = CALL_TIME;
 uint8_t delay_time = DELAY_TIME;
 signed int alarm_stop_time = ALARM_STOP_TIME;
 
+typedef struct {
+    char nrtel[10];
+    char api[17];
+} CFG;
+
+CFG eem_cfg EEMEM;  // definicja struktury w eeprom
+CFG ram_cfg;  // definicja struktury w ram
+CFG const pgm_cfg PROGMEM = {"792682279","3UY74VC0NTPC5SMJ"};
+
+
 void timer0_init(void);
 void lcd_refresh (void);
 void sim800_init(void);
@@ -67,6 +81,12 @@ void sim800_disconnect (void);
 void sim800_send_sms (void);
 void sim800_send_data_to_web (void);
 void adc_init (void);
+void settings (void);
+void copy_eem_ram (void);
+void copy_pgm_ram (void);
+void copy_ram_eem (void);
+void check_and_read_cfg (void);
+void read_default_settings (void);
 
 ISR (TIMER0_OVF_vect)
 {
@@ -78,6 +98,9 @@ ISR (TIMER0_OVF_vect)
 		f_temp=1;
 		f_lcd_ref=1;
 		timeout--;
+
+		if( (!(PIND & (1<<PD2))) || (!(PIND & (1<<PD2))) ) longpress++;
+		else longpress = 0;
 
 		if(timer0_lcd>0) timer0_lcd--;
 		if(timer0_lcd == 0)
@@ -136,7 +159,7 @@ ISR (TIMER0_OVF_vect)
 				timer0_minute++;
 				if(timer0_minute>239) timer0_minute = 0;
 
-				if(!(timer0_minute % 20)) f_send_web = 1;
+				if(!(timer0_minute % 2)) f_send_web = 1;
 			}
 
 	}
@@ -154,10 +177,18 @@ int main (void)
 	i2c_init();
 	lcd_init(LCD_DISP_ON);
 	lcd_led(0);
+
+	check_and_read_cfg();
+	if(!(PIND & (1<<PD2)))
+	{
+		read_default_settings();
+	}
+
 	sim800_reset();
 	sim800_init();
 	timer0_init();
 	adc_init();
+
 
 	temp = MCP9808_GetTemp(MCP9808_ADDRESS);
 
@@ -196,7 +227,7 @@ int main (void)
 		{
 			sim800_disconnect();
 
-			if(strstr(uart_parsed_string,"792682279"))
+			if(strstr(uart_parsed_string,ram_cfg.nrtel))
 			{
 				timer0_lcd = LCD_TIME;
 				lcd_led(0);
@@ -310,7 +341,9 @@ void sim800_reset(void)
 
 void sim800_call(void)
 {
-	uart_puts_p(PSTR("ATD792682279;\r\n"));
+	uart_puts_p(PSTR("ATD"));
+	uart_puts(ram_cfg.nrtel);
+	uart_puts_p(PSTR(";\r\n"));
 }
 
 void sim800_disconnect (void)
@@ -356,21 +389,27 @@ void pin_init (void)
 void pin_check (void)
 {
 	if(f_alarm && (!(PIND & (1<<PD2))))
+		{
+			lcd_clrscr();
+			f_connect = 0;
+			f_disconnect = 0;
+			f_alarm_stop = 1;
+			f_alarm = 0;
+			sim800_disconnect();
+		}
+
+
+	if(!f_alarm && (!(PIND & (1<<PD2))))
 	{
-		lcd_clrscr();
-		f_connect = 0;
-		f_disconnect = 0;
-		f_alarm_stop = 1;
-		f_alarm = 0;
-		sim800_disconnect();
+		if(longpress>=5) settings();
 	}
 
 	if(!(PIND & (1<<PD2)))
 		{
 		timer0_lcd = LCD_TIME;
 		lcd_led(0);
-		//_delay_ms(500);
 		}
+	else longpress = 0;
 }
 
 uint8_t parsedata(char *data, char *out)
@@ -451,7 +490,9 @@ void sim800_send_sms (void)
 	uart_puts_p(PSTR("\r\n"));
 	uart_putc(13);
 	_delay_ms(100);
-	uart_puts_p(PSTR("AT+CMGS=\"+48792682279\""));
+	uart_puts_p(PSTR("AT+CMGS=\""));
+	uart_puts(ram_cfg.nrtel);
+	uart_putc('\"');
 	uart_putc(0x0D);
 	_delay_ms(700);
 	dtostrf(temp,3,1,lcdbuffer);
@@ -465,6 +506,8 @@ void sim800_send_sms (void)
 
 void sim800_send_data_to_web (void)
 {
+	_delay_ms(300);
+	uart_puts_p(PSTR("\r\n"));
 	lcd_gotoxy(11,0);
 	lcd_puts_p(PSTR(" GPRS"));
 	uart_puts_p(PSTR("AT+SAPBR=1,1\r\n"));
@@ -475,7 +518,10 @@ void sim800_send_data_to_web (void)
 	_delay_ms(100);
 	uart_puts_p(PSTR("AT+HTTPPARA=\"CID\",1\r\n"));
 	_delay_ms(100);
-	uart_puts_p(PSTR("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key=3UY74VC0NTPC5SMJ&field1="));
+	//uart_puts_p(PSTR("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key=3UY74VC0NTPC5SMJ&field1="));
+	uart_puts_p(PSTR("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key="));
+	uart_puts(ram_cfg.api);
+	uart_puts_p(PSTR("&field1="));
 	dtostrf(temp,3,1,lcdbuffer);
 	uart_puts(lcdbuffer);
 	uart_puts_p(PSTR("\"\r\n"));
@@ -502,6 +548,131 @@ void adc_init (void)
                                //na wewnêtrzne Ÿród³o 1,1V
                                //z zewnêtrznym kondensatorem na pinie AREF
     ADCSRA |= (1<<ADSC);
+}
+
+void settings (void)
+{
+	uint8_t option = 1;
+	uint8_t write = 0;
+	uint8_t char_num = 0;
+
+	lcd_clrscr();
+	lcd_gotoxy(0,0);
+	lcd_puts_p(PSTR("USTAWIENIA"));
+	_delay_ms(2000);
+
+	while(write == 0)
+	{
+		if(!(PIND & (1<<PD2)))
+			{
+			char_num++;
+			_delay_ms(100);
+			}
+
+		switch (option)
+		{
+		case 1:
+			lcd_gotoxy(0,0);
+			strcpy(lcdbuffer,"NR. TEL        ");
+			lcdbuffer[char_num] = 163;
+			lcd_puts(lcdbuffer);
+			if(!(PIND & (1<<PD3)))
+			{
+				_delay_ms(100);
+				ram_cfg.nrtel[char_num]++;
+				if(ram_cfg.nrtel[char_num]>'9') ram_cfg.nrtel[char_num] = '0';
+			}
+
+			lcd_gotoxy(0,1);
+			lcd_puts(ram_cfg.nrtel);
+
+
+			if(char_num>8)
+			{
+				option++;
+				char_num = 0;
+			}
+			break;
+		case 2:
+			lcd_gotoxy(0,0);
+			strcpy(lcdbuffer,"THINGSPEAK API ");
+			lcdbuffer[char_num] = 163;
+			lcd_puts(lcdbuffer);
+			if(!(PIND & (1<<PD3)))
+			{
+				_delay_ms(100);
+				ram_cfg.api[char_num]++;
+				if(ram_cfg.api[char_num] == 58) ram_cfg.api[char_num] = 65;
+				if(ram_cfg.api[char_num]>'Z') ram_cfg.api[char_num] = '0';
+			}
+
+			lcd_gotoxy(0,1);
+			lcd_puts(ram_cfg.api);
+
+
+			if(char_num>15)
+			{
+				//option++;
+				char_num = 0;
+				write = 1;
+			}
+			break;
+
+
+		}
+
+		if(write)
+			{
+			lcd_clrscr();
+			lcd_puts_p(PSTR("Zapis ustawien..."));
+			_delay_ms(1000);
+			copy_ram_eem();
+			lcd_clrscr();
+			f_lcdon = 0;
+			timer0_lcd = LCD_TIME;
+			}
+
+	}
+
+}
+
+void copy_ram_eem (void)
+{
+	eeprom_write_block(&ram_cfg,&eem_cfg,sizeof(CFG));
+}
+
+void copy_eem_ram (void)
+{
+	eeprom_read_block(&ram_cfg,&eem_cfg,sizeof(CFG));
+}
+
+void copy_pgm_ram (void)
+{
+	memcpy_P(&ram_cfg,&pgm_cfg,sizeof(CFG));
+}
+
+void check_and_read_cfg (void)
+{
+	copy_eem_ram();
+
+	if(ram_cfg.nrtel[0] == 0xff)
+	{
+		read_default_settings();
+	}
+}
+
+void read_default_settings (void)
+{
+	lcd_clrscr();
+	lcd_puts("Reset ustaw...");
+	_delay_ms(500);
+	copy_pgm_ram();
+	copy_ram_eem();
+
+	lcd_gotoxy(0,1);
+	lcd_puts(ram_cfg.api);
+	_delay_ms(500);
+	lcd_clrscr();
 }
 
 
