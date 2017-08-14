@@ -572,12 +572,15 @@ void uart_puts_p(const char *progmem_s )
 }/* uart_puts_p */
 
 char * uart_get_str(char *buf){
+	uint8_t cnt = 0;
 	int c;
 	char *wsk = buf;
 	if( ascii_line ) {
 		while( (c= uart_getc())) {
 			if( 13 == c || c<0) break;
 			if(c != '\r' && c!= '\n') *buf++ = c;
+			cnt++;
+			if(cnt>125) break;
 		}
 		*buf++=0;
 		ascii_line--;

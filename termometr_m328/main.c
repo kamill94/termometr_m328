@@ -159,7 +159,7 @@ ISR (TIMER0_OVF_vect)
 				timer0_minute++;
 				if(timer0_minute>239) timer0_minute = 0;
 
-				if(!(timer0_minute % 2)) f_send_web = 1;
+				if(!(timer0_minute % 20)) f_send_web = 1;
 			}
 
 	}
@@ -473,10 +473,9 @@ void sim800_get_data (void)
 	switch (sim800_func_count)
 	{
 	case 0:
-		uart_puts_p(PSTR("AT+CBC\r\n"));
+		uart_puts_p(PSTR("AT+CSQ\r\n"));
 		break;
 	case 1:
-		uart_puts_p(PSTR("AT+CSQ\r\n"));
 		break;
 	}
 
@@ -591,6 +590,7 @@ void settings (void)
 			{
 				option++;
 				char_num = 0;
+				ram_cfg.nrtel[9]='\0';
 			}
 			break;
 		case 2:
@@ -615,6 +615,7 @@ void settings (void)
 				//option++;
 				char_num = 0;
 				write = 1;
+				ram_cfg.api[16]='\0';
 			}
 			break;
 
