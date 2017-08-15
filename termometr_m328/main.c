@@ -552,6 +552,7 @@ void adc_init (void)
 void settings (void)
 {
 	uint8_t option = 1;
+	uint8_t f_nextmenu = 1;
 	uint8_t write = 0;
 	uint8_t char_num = 0;
 
@@ -562,57 +563,85 @@ void settings (void)
 
 	while(write == 0)
 	{
-		if(!(PIND & (1<<PD2)))
-			{
-			char_num++;
-			_delay_ms(100);
-			}
 
 		switch (option)
 		{
 		case 1:
-			lcd_gotoxy(0,0);
-			strcpy(lcdbuffer,"NR. TEL        ");
-			lcdbuffer[char_num] = 163;
-			lcd_puts(lcdbuffer);
+
+			if(f_nextmenu == 1)
+			{
+				lcd_gotoxy(0,0);
+				lcd_putc(163);
+				lcd_puts_p(PSTR("R. TEL        "));
+				lcd_gotoxy(0,1);
+				lcd_puts(ram_cfg.nrtel);
+				f_nextmenu = 0;
+			}
+
 			if(!(PIND & (1<<PD3)))
 			{
 				_delay_ms(100);
 				ram_cfg.nrtel[char_num]++;
 				if(ram_cfg.nrtel[char_num]>'9') ram_cfg.nrtel[char_num] = '0';
+				lcd_gotoxy(0,1);
+				lcd_puts(ram_cfg.nrtel);
 			}
 
-			lcd_gotoxy(0,1);
-			lcd_puts(ram_cfg.nrtel);
+			if(!(PIND & (1<<PD2)))
+			{
+				char_num++;
+				lcd_gotoxy(0,0);
+				strcpy(lcdbuffer,"NR. TEL        ");
+				lcdbuffer[char_num] = 163;
+				lcd_puts(lcdbuffer);
+				_delay_ms(100);
+			}
 
 
 			if(char_num>8)
 			{
 				option++;
+				f_nextmenu = 1;
 				char_num = 0;
 				ram_cfg.nrtel[9]='\0';
 			}
 			break;
+
 		case 2:
+
+			if(f_nextmenu == 1)
+			{
 			lcd_gotoxy(0,0);
-			strcpy(lcdbuffer,"THINGSPEAK API ");
-			lcdbuffer[char_num] = 163;
-			lcd_puts(lcdbuffer);
+			lcd_putc(163);
+			lcd_puts_p(PSTR("HINGSPEAK API "));
+			lcd_gotoxy(0,1);
+			lcd_puts(ram_cfg.api);
+			f_nextmenu = 0;
+			}
+
 			if(!(PIND & (1<<PD3)))
 			{
-				_delay_ms(100);
+				_delay_ms(50);
 				ram_cfg.api[char_num]++;
 				if(ram_cfg.api[char_num] == 58) ram_cfg.api[char_num] = 65;
 				if(ram_cfg.api[char_num]>'Z') ram_cfg.api[char_num] = '0';
+				lcd_gotoxy(0,1);
+				lcd_puts(ram_cfg.api);
 			}
 
-			lcd_gotoxy(0,1);
-			lcd_puts(ram_cfg.api);
+			if(!(PIND & (1<<PD2)))
+			{
+				char_num++;
+				lcd_gotoxy(0,0);
+				strcpy(lcdbuffer,"THINGSPEAK API ");
+				lcdbuffer[char_num] = 163;
+				lcd_puts(lcdbuffer);
+				_delay_ms(100);
+			}
 
 
 			if(char_num>15)
 			{
-				//option++;
 				char_num = 0;
 				write = 1;
 				ram_cfg.api[16]='\0';
