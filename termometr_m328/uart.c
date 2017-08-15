@@ -580,7 +580,7 @@ char * uart_get_str(char *buf){
 			if( 13 == c || c<0) break;
 			if(c != '\r' && c!= '\n') *buf++ = c;
 			cnt++;
-			if(cnt>125) break;
+			if(cnt>(UART_RX_BUFFER_SIZE-1)) break;
 		}
 		*buf++=0;
 		ascii_line--;
