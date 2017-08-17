@@ -321,6 +321,8 @@ void sim800_init(void)
     _delay_ms(10000);
     uart_puts_p(PSTR("ATE0\r\n"));
     _delay_ms(200);
+    uart_puts_p(PSTR("AT+CLIP=1\r\n"));
+    _delay_ms(200);
     uart_puts_p(PSTR("AT+CMGD=1,4\r\n"));
     _delay_ms(200);
     uart_puts_p(PSTR("AT+CMGF=1\r\n"));
