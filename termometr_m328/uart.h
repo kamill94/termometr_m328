@@ -80,7 +80,7 @@ LICENSE:
  *  CDEFS += -DUART_RX_BUFFER_SIZE=nn to your Makefile.
  */
 #ifndef UART_RX_BUFFER_SIZE
-#define UART_RX_BUFFER_SIZE 128
+#define UART_RX_BUFFER_SIZE 32
 #endif
 
 /** @brief  Size of the circular transmit buffer, must be power of 2 
@@ -185,7 +185,7 @@ extern void uart_puts_p(const char *s );
  */
 #define uart_puts_P(__s)       uart_puts_p(PSTR(__s))
 
-char * uart_get_str(char *buf);
+
 
 /** @brief  Initialize USART1 (only available on selected ATmegas) @see uart_init */
 extern void uart1_init(unsigned int baudrate);
