@@ -87,6 +87,8 @@ void copy_pgm_ram (void);
 void copy_ram_eem (void);
 void check_and_read_cfg (void);
 void read_default_settings (void);
+char * uart_get_str(char *buf);
+
 
 ISR (TIMER0_OVF_vect)
 {
@@ -705,6 +707,25 @@ void read_default_settings (void)
 	lcd_puts(ram_cfg.api);
 	_delay_ms(500);
 	lcd_clrscr();
+}
+
+char * uart_get_str(char *buf)
+{
+  static int index;
+  int c;
+
+  while( (c=uart_getc()) != UART_NO_DATA )
+  {
+    if((c=='\n') || (c=='\r'))
+   {
+       buf[index]='\0';
+       index = 0;
+       return buf;
+   }
+   buf[index++] = c;
+   }
+
+  return NULL;
 }
 
 
