@@ -196,8 +196,10 @@ int main (void)
 
 	while(1)
 	{
-		uart_get_str(uart_receive_buffer);
-		uart_datatype = parsedata(uart_receive_buffer, uart_parsed_string);
+		if(NULL != uart_get_str(uart_receive_buffer))
+		{
+			uart_datatype = parsedata(uart_receive_buffer, uart_parsed_string);
+		}
 
 		if((timer0_second % 2) == 0 && f_temp)
 			{
