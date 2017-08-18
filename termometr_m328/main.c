@@ -87,6 +87,7 @@ void copy_pgm_ram (void);
 void copy_ram_eem (void);
 void check_and_read_cfg (void);
 void read_default_settings (void);
+void battery_low (void);
 char * uart_get_str(char *buf);
 
 
@@ -213,6 +214,8 @@ int main (void)
 			ADCSRA |= (1<<ADSC); // uruchomienie konwersji ADC
 			battery = (((ADC*1.1)/1024)*4.33333333);
 
+			if(battery < 3.70) battery_low();
+
 			lcd_refresh();
 			f_lcd_ref = 0;
 			}
@@ -270,6 +273,12 @@ void lcd_refresh (void)
 		if(mcperr) lcd_puts_p(PSTR("BLAD"));
 		else lcd_puts(lcdbuffer);
 
+		lcd_gotoxy(9,0);
+		if(!(PIND & (1<<PD4)))
+		{
+			lcd_puts("BAT");
+		}
+		else lcd_puts("ZAS");
 
 		if(!f_alarm_stop)  // Wyswietlanie pozostalego czasu blokady alarmu
 			{
@@ -387,6 +396,9 @@ void pin_init (void)
 
 	DDRD &= ~(1<<PD3);
 	PORTD |= 1<<PD3;
+
+	DDRD &= ~(1<<PD4);
+	PORTD &= ~(1<<PD4);
 
 	DDRC |= (1<<PC3);
 	PORTD |= (1<<PC3);
@@ -708,6 +720,19 @@ void read_default_settings (void)
 	lcd_gotoxy(0,1);
 	lcd_puts(ram_cfg.api);
 	_delay_ms(500);
+	lcd_clrscr();
+}
+
+void battery_low (void)
+{
+	lcd_clrscr();
+	while((!(PIND & (1<<PD4))))
+	{
+		lcd_gotoxy(0,0);
+		lcd_puts_p(PSTR("Bateria slaba."));
+		lcd_gotoxy(0,1);
+		lcd_puts_p(PSTR("Podlacz zasilacz."));
+	}
 	lcd_clrscr();
 }
 
