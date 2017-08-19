@@ -726,6 +726,8 @@ void read_default_settings (void)
 void battery_low (void)
 {
 	lcd_clrscr();
+	uart_puts("\r\n");
+	uart_puts("AT+CFUN=0\r\n");
 	while((!(PIND & (1<<PD4))))
 	{
 		lcd_gotoxy(0,0);
@@ -733,6 +735,9 @@ void battery_low (void)
 		lcd_gotoxy(0,1);
 		lcd_puts_p(PSTR("Podlacz zasilacz"));
 	}
+	uart_puts("\r\n");
+	uart_puts("AT+CFUN=1\r\n");
+	_delay_ms(10000);
 	lcd_clrscr();
 }
 
