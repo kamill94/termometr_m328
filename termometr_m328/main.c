@@ -729,9 +729,9 @@ void battery_low (void)
 	while((!(PIND & (1<<PD4))))
 	{
 		lcd_gotoxy(0,0);
-		lcd_puts_p(PSTR("Bateria slaba."));
+		lcd_puts_p(PSTR("Bateria slaba"));
 		lcd_gotoxy(0,1);
-		lcd_puts_p(PSTR("Podlacz zasilacz."));
+		lcd_puts_p(PSTR("Podlacz zasilacz"));
 	}
 	lcd_clrscr();
 }
