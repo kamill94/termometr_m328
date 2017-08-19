@@ -23,6 +23,10 @@
 #include "lcdpcf8574.h"
 #include "uart.h"
 #include "mcp9808.h"
+#include "sim800.h"
+#include "common.h"
+
+extern uint8_t sim800_signal;
 
 uint8_t timer0_skaler = 0;
 uint8_t timer0_second = 0;
@@ -40,9 +44,6 @@ char uart_receive_buffer [129];
 char uart_parsed_string [33];
 uint8_t uart_datatype;
 
-uint8_t sim800_func_count = 0;
-uint8_t sim800_signal;
-
 
 uint8_t f_temp = 0;  //flagi
 uint8_t f_lcd_ref = 0;
@@ -58,11 +59,6 @@ uint8_t call_time = CALL_TIME;
 uint8_t delay_time = DELAY_TIME;
 signed int alarm_stop_time = ALARM_STOP_TIME;
 
-typedef struct {
-    char nrtel[10];
-    char api[17];
-} CFG;
-
 CFG eem_cfg EEMEM;  // definicja struktury w eeprom
 CFG ram_cfg;  // definicja struktury w ram
 CFG const pgm_cfg PROGMEM = {"792682279","3UY74VC0NTPC5SMJ"};
@@ -70,16 +66,10 @@ CFG const pgm_cfg PROGMEM = {"792682279","3UY74VC0NTPC5SMJ"};
 
 void timer0_init(void);
 void lcd_refresh (void);
-void sim800_init(void);
-void sim800_reset(void);
 void alarms (void);
 void pin_init (void);
 void pin_check (void);
 uint8_t parsedata(char *data, char *out);
-void sim800_get_data (void);
-void sim800_disconnect (void);
-void sim800_send_sms (void);
-void sim800_send_data_to_web (void);
 void adc_init (void);
 void settings (void);
 void copy_eem_ram (void);
@@ -328,43 +318,6 @@ void lcd_refresh (void)
 
 }
 
-void sim800_init(void)
-    {
-	//_delay_ms(1000);
-    _delay_ms(10000);
-    uart_puts_p(PSTR("ATE0\r\n"));
-    _delay_ms(200);
-    uart_puts_p(PSTR("AT+CLIP=1\r\n"));
-    _delay_ms(200);
-    uart_puts_p(PSTR("AT+CMGD=1,4\r\n"));
-    _delay_ms(200);
-    uart_puts_p(PSTR("AT+CMGF=1\r\n"));
-    _delay_ms(200);
-    uart_puts_p(PSTR("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n"));
-    _delay_ms(200);
-    uart_puts_p(PSTR("AT+SAPBR=3,1,\"APN\",\"internet\"\r\n"));
-    _delay_ms(200);
-    }
-
-void sim800_reset(void)
-{
-	PORTC &= ~(1<<PC3);
-	_delay_ms(100);
-	PORTC |= (1<<PC3);
-
-}
-
-void sim800_call(void)
-{
-	uart_puts_p(PSTR("ATD"));
-	uart_puts(ram_cfg.nrtel);
-	uart_puts_p(PSTR(";\r\n"));
-}
-
-void sim800_disconnect (void)
-{
-	uart_puts_p(PSTR("ATH\r\n"));
-}
 
 void alarms (void)
 {
@@ -486,72 +439,6 @@ uint8_t parsedata(char *data, char *out)
     return datatype;
     }
 
-void sim800_get_data (void)
-{
-	switch (sim800_func_count)
-	{
-	case 0:
-		uart_puts_p(PSTR("AT+CSQ\r\n"));
-		break;
-	case 1:
-		break;
-	}
-
-	sim800_func_count++;
-	if(sim800_func_count > 1) sim800_func_count = 0;
-}
-
-void sim800_send_sms (void)
-{
-	_delay_ms(300);
-	uart_puts_p(PSTR("\r\n"));
-	uart_putc(13);
-	_delay_ms(100);
-	uart_puts_p(PSTR("AT+CMGS=\""));
-	uart_puts(ram_cfg.nrtel);
-	uart_putc('\"');
-	uart_putc(0x0D);
-	_delay_ms(700);
-	dtostrf(temp,3,1,lcdbuffer);
-	uart_puts_p(PSTR("Temperatura: "));
-	uart_puts(lcdbuffer);
-	uart_puts(" C");
-	uart_putc(0x1A);
-	_delay_ms(2000);
-
-}
-
-void sim800_send_data_to_web (void)
-{
-	_delay_ms(300);
-	uart_puts_p(PSTR("\r\n"));
-	lcd_gotoxy(11,0);
-	lcd_puts_p(PSTR(" GPRS"));
-	uart_puts_p(PSTR("AT+SAPBR=1,1\r\n"));
-	_delay_ms(5000);
-	uart_puts_p(PSTR("AT+HTTPINIT\r\n"));
-	_delay_ms(100);
-	uart_puts_p(PSTR("AT+HTTPSSL=1\r\n"));
-	_delay_ms(100);
-	uart_puts_p(PSTR("AT+HTTPPARA=\"CID\",1\r\n"));
-	_delay_ms(100);
-	//uart_puts_p(PSTR("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key=3UY74VC0NTPC5SMJ&field1="));
-	uart_puts_p(PSTR("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key="));
-	uart_puts(ram_cfg.api);
-	uart_puts_p(PSTR("&field1="));
-	dtostrf(temp,3,1,lcdbuffer);
-	uart_puts(lcdbuffer);
-	uart_puts_p(PSTR("\"\r\n"));
-	_delay_ms(100);
-	uart_puts_p(PSTR("AT+HTTPACTION=0\r\n"));
-	_delay_ms(5000);
-	uart_puts_p(PSTR("AT+HTTPREAD\r\n"));
-	_delay_ms(1000);
-	uart_puts_p(PSTR("AT+HTTPTERM\r\n"));
-	_delay_ms(100);
-	//uart_puts_p(PSTR("AT+SAPBR=0,1\r\n"));  //Rozlaczenie GPRS
-	//_delay_ms(100);
-}
 
 void adc_init (void)
 {
