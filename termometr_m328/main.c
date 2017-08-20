@@ -43,6 +43,9 @@ uint8_t uart_datatype;
 uint8_t sim800_func_count = 0;
 uint8_t sim800_signal;
 
+uint8_t adc_dt = 4;
+int adc_result = 0;
+
 
 uint8_t f_temp = 0;  //flagi
 uint8_t f_lcd_ref = 0;
@@ -212,9 +215,14 @@ int main (void)
 		if(f_lcd_ref)
 			{
 			ADCSRA |= (1<<ADSC); // uruchomienie konwersji ADC
-			battery = (((ADC*1.1)/1024)*4.33333333);
+			adc_result = adc_result * adc_dt;
+			adc_result = adc_result + ADC;
+			adc_result = adc_result / (adc_dt+1);
 
-			if(battery < 3.70) battery_low();
+			//battery = adc_result;
+			battery = (((adc_result*1.1)/1024)*4.33);
+
+		//	if(battery < 3.70) battery_low();
 
 			lcd_refresh();
 			f_lcd_ref = 0;
@@ -565,6 +573,9 @@ void adc_init (void)
                                //na wewnêtrzne Ÿród³o 1,1V
                                //z zewnêtrznym kondensatorem na pinie AREF
     ADCSRA |= (1<<ADSC);
+
+    while(!(ADCSRA & (1<<ADIF)));
+    adc_result = ADC;
 }
 
 void settings (void)
