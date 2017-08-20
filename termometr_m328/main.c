@@ -45,6 +45,7 @@ uint8_t sim800_signal;
 
 uint8_t adc_dt = 4;
 int adc_result = 0;
+uint8_t bat_low_cnt = 0;
 
 
 uint8_t f_temp = 0;  //flagi
@@ -222,7 +223,19 @@ int main (void)
 			//battery = adc_result;
 			battery = (((adc_result*1.1)/1024)*4.33);
 
-		//	if(battery < 3.70) battery_low();
+			if(battery < 3.70)
+				{
+				bat_low_cnt++;
+				if(bat_low_cnt > 10)
+				{
+					bat_low_cnt = 0;
+					battery_low();
+				}
+				}
+			else
+			{
+				bat_low_cnt = 0;
+			}
 
 			lcd_refresh();
 			f_lcd_ref = 0;
