@@ -759,8 +759,12 @@ void battery_low (void)
 		lcd_gotoxy(0,1);
 		lcd_puts_p(PSTR("Podlacz zasilacz"));
 	}
+	_delay_ms(2000);
+	f_lcdon = 0;
+	timer0_lcd = LCD_TIME;
 	uart_puts("\r\n");
 	uart_puts("AT+CFUN=1\r\n");
+
 	_delay_ms(10000);
 	lcd_clrscr();
 }
